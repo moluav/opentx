@@ -34,11 +34,12 @@ bool isBootloader(const char * filename)
   return isBootloaderStart(buffer);
 }
 
-void bootloaderFlash(const char * filename)
+void bootloaderFlash(const char * filename, ProgressHandler progressHandler, DoneHandler doneHandler)
 {
   FIL file;
   uint8_t buffer[1024];
   UINT count;
+  bool error = false;
 
   pausePulses();
 
@@ -53,17 +54,21 @@ void bootloaderFlash(const char * filename)
   for (int i = 0; i < BOOTLOADER_SIZE; i += 1024) {
     watchdogSuspend(1000/*10s*/);
     if (f_read(&file, buffer, sizeof(buffer), &count) != FR_OK || count != sizeof(buffer)) {
-      POPUP_WARNING(STR_SDCARD_ERROR);
+      doneHandler(true, STR_SDCARD_ERROR, nullptr);
+      error = true;
       break;
     }
     if (i == 0 && !isBootloaderStart(buffer)) {
-      POPUP_WARNING(STR_INCOMPATIBLE);
+      doneHandler(true, STR_INCOMPATIBLE, nullptr);
+      error = true;
       break;
     }
     for (int j = 0; j < 1024; j += FLASH_PAGESIZE) {
       flashWrite(CONVERT_UINT_PTR(FIRMWARE_ADDRESS + i + j), CONVERT_UINT_PTR(buffer + j));
     }
-#if !defined(COLORLCD)
+#if defined(COLORLCD)
+    progressHandler("Bootloader", STR_WRITING, i, BOOTLOADER_SIZE);
+#else
     drawProgressScreen("Bootloader", STR_WRITING, i, BOOTLOADER_SIZE);
 #endif
 #if defined(SIMU)
@@ -71,6 +76,9 @@ void bootloaderFlash(const char * filename)
     if (SIMU_SLEEP_OR_EXIT_MS(30))
       break;
 #endif
+  }
+  if (!error) {
+    doneHandler(true, STR_FIRMWARE_UPDATE_SUCCESS, nullptr);
   }
 
   watchdogSuspend(0);

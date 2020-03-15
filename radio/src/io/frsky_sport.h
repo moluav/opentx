@@ -22,6 +22,7 @@
 #define _IO_FRSKY_SPORT_H_
 
 #include "dataconstants.h"
+#include "popups.h"
 
 PACK(union SportTelemetryPacket
 {
@@ -36,7 +37,7 @@ PACK(union SportTelemetryPacket
 
 #if defined(STM32)
 bool isBootloader(const char * filename);
-void bootloaderFlash(const char * filename);
+void bootloaderFlash(const char * filename, ProgressHandler progressHandler, DoneHandler doneHandler);
 #endif
 
 #endif // _IO_FRSKY_SPORT_H_

@@ -56,6 +56,9 @@ class FullScreenDialog : public FormGroup {
 
 #if defined(HARDWARE_TOUCH)
     bool onTouchEnd(coord_t x, coord_t y) override;
+    void addNextButton(std::function<void(void)> handler);
+#else
+    void addNextButton(std::function<void(void)> handler);
 #endif
 
     void deleteLater();

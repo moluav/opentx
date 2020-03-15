@@ -45,6 +45,21 @@ FullScreenDialog::FullScreenDialog(uint8_t type, std::string title, std::string 
   setFocus();
 }
 
+#if defined(HARDWARE_TOUCH)
+void FullScreenDialog::addNextButton(std::function<void(void)> handler) {
+  this->confirmHandler = handler;
+  new FabButton(this, LCD_W - 50, ALERT_BUTTON_TOP, ICON_NEXT,
+  [=]() -> uint8_t {
+    running = false;
+    if (confirmHandler) confirmHandler();
+     return 0;
+  });
+}
+#else
+void FullScreenDialog::addNextButton(std::function<void(void)> handler) {
+}
+#endif
+
 void FullScreenDialog::paint(BitmapBuffer * dc)
 {
   static_cast<ThemeBase *>(theme)->drawBackground(dc);

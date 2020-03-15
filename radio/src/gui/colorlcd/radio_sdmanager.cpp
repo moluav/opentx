@@ -46,7 +46,7 @@ class FilePreview : public Window
 {
   public:
     FilePreview(Window *parent, const rect_t &rect) :
-            Window(parent, rect, NO_SCROLLBAR)
+      Window(parent, rect, NO_SCROLLBAR)
     {
     }
 
@@ -86,29 +86,68 @@ class FilePreview : public Window
     BitmapBuffer *bitmap = nullptr;
 };
 
+class FlashBootloaderDialog: public FullScreenDialog
+{
+  public:
+    FlashBootloaderDialog():
+      FullScreenDialog(WARNING_TYPE_INFO, "Flash Bootloader")
+    {
+      progress = new Progress(this, {LCD_W / 2 - 50, LCD_H / 2, 100, 15});
+    }
+
+    void flash(const char * filename)
+    {
+      bootloaderFlash(filename,
+        [=](const char * title, const char * message, int count, int total) -> void {
+          setMessage(message);
+          progress->setValue(total > 0 ? count * 100 / total : 0);
+          mainWindow.run(false);
+      },
+     [=](bool success, const char * message, const char * messageLine2) -> void {
+         clear();
+         progress = nullptr;
+         type = success ? WARNING_TYPE_INFO : WARNING_TYPE_ALERT;
+         if(message != nullptr) setMessage(message);
+         addNextButton(confirmHandler);
+      });
+    }
+
+  protected:
+    Progress* progress;
+};
+
+
+template <class T>
 class FlashModuleDialog: public FullScreenDialog
 {
   public:
     FlashModuleDialog(ModuleIndex module):
       FullScreenDialog(WARNING_TYPE_INFO, "Flash device"),
-      device(module),
-      progress(this, {100, 100, 100, 15})
+      device(module)
     {
+      progress = new Progress(this, {ALERT_BITMAP_LEFT, ALERT_BUTTON_TOP, LCD_W - ALERT_BITMAP_LEFT*2, ALERT_TITLE_LINE_HEIGHT});
     }
 
-    void flash(const char * filename)
+    virtual void flash(const char * filename)
     {
-      device.flashFirmware(filename, [=](const char * title, const char * message, int count, int total) -> void {
-          setMessage(message);
-          progress.setValue(total > 0 ? count * 100 / total : 0);
-          mainWindow.run(false);
-      });
-      deleteLater();
+      device.flashFirmware(filename,
+                           [=](const char * title, const char * message, int count, int total) -> void {
+                               setMessage(message);
+                               progress->setValue(total > 0 ? count * 100 / total : 0);
+                               mainWindow.run(false);
+                           },
+                           [=](bool success, const char * message, const char * messageLine2) -> void {
+                               clear();
+                               progress = nullptr;
+                               type = success ? WARNING_TYPE_INFO : WARNING_TYPE_ALERT;
+                               if(message != nullptr) setMessage(message);
+                               addNextButton(confirmHandler);
+                           });
     }
 
   protected:
-    FrskyDeviceFirmwareUpdate device;
-    Progress progress;
+    T device;
+    Progress* progress;
 };
 
 void RadioSdManagerPage::build(FormWindow * window)
@@ -169,21 +208,6 @@ void RadioSdManagerPage::build(FormWindow * window)
                   audioQueue.playFile(getFullPath(name), 0, ID_PLAY_FROM_SD_MANAGER);
               });
             }
-#if defined(MULTIMODULE) && !defined(DISABLE_MULTI_UPDATE)
-            if (!READ_ONLY() && !strcasecmp(ext, MULTI_FIRMWARE_EXT)) {
-              MultiFirmwareInformation information;
-              if (information.readMultiFirmwareInformation(name.data()) == nullptr) {
-#if defined(INTERNAL_MODULE_MULTI)
-                menu->addLine(STR_FLASH_INTERNAL_MULTI, [=]() {
-                    // TODO
-                });
-#endif
-                menu->addLine(STR_FLASH_EXTERNAL_MULTI, [=]() {
-                    // TODO
-                });
-              }
-            }
-#endif
             else if (isExtensionMatching(ext, BITMAPS_EXT)) {
               // TODO
             }
@@ -192,26 +216,44 @@ void RadioSdManagerPage::build(FormWindow * window)
                   // TODO
               });
             }
+#if defined(MULTIMODULE)
+            if(!strcasecmp(ext, MULTI_FIRMWARE_EXT)) {
+              MultiFirmwareInformation information;
+              if (information.readMultiFirmwareInformation(name.data()) == nullptr) {
+#if defined(INTERNAL_MODULE_MULTI)
+                menu->addLine(STR_FLASH_INTERNAL_MULTI, [=]() {
+                    auto dialog = new FlashModuleDialog<MultiModuleFirmwareUpdate>(INTERNAL_MODULE);
+                    dialog->flash(getFullPath(name));
+                });
+#endif
+                menu->addLine(STR_FLASH_EXTERNAL_MULTI, [=]() {
+                    auto dialog = new FlashModuleDialog<MultiModuleFirmwareUpdate>(EXTERNAL_MODULE);
+                    dialog->flash(getFullPath(name));
+                });
+              }
+            }
+#endif
             if (!READ_ONLY() && !strcasecmp(ext, FIRMWARE_EXT)) {
               if (isBootloader(name.data())) {
                 menu->addLine(STR_FLASH_BOOTLOADER, [=]() {
-                    // TODO
+                    auto dialog = new FlashBootloaderDialog();
+                    dialog->flash(getFullPath(name));
                 });
               }
             }
             else if (!READ_ONLY() && !strcasecmp(ext, SPORT_FIRMWARE_EXT)) {
               if (HAS_SPORT_UPDATE_CONNECTOR()) {
                 menu->addLine(STR_FLASH_EXTERNAL_DEVICE, [=]() {
-                    auto dialog = new FlashModuleDialog(SPORT_MODULE);
+                    auto dialog = new FlashModuleDialog<FrskyDeviceFirmwareUpdate>(SPORT_MODULE);
                     dialog->flash(getFullPath(name));
                 });
               }
               menu->addLine(STR_FLASH_INTERNAL_MODULE, [=]() {
-                  auto dialog = new FlashModuleDialog(INTERNAL_MODULE);
+                  auto dialog = new FlashModuleDialog<FrskyDeviceFirmwareUpdate>(INTERNAL_MODULE);
                   dialog->flash(getFullPath(name));
               });
               menu->addLine(STR_FLASH_EXTERNAL_MODULE, [=]() {
-                  auto dialog = new FlashModuleDialog(EXTERNAL_MODULE);
+                  auto dialog = new FlashModuleDialog<FrskyDeviceFirmwareUpdate>(EXTERNAL_MODULE);
                   dialog->flash(getFullPath(name));
               });
             }
