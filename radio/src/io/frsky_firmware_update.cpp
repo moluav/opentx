@@ -476,7 +476,7 @@ const char * FrskyDeviceFirmwareUpdate::endTransfer()
   return nullptr;
 }
 
-const char * FrskyDeviceFirmwareUpdate::flashFirmware(const char * filename, ProgressHandler progressHandler)
+void FrskyDeviceFirmwareUpdate::flashFirmware(const char * filename, ProgressHandler progressHandler, DoneHandler doneHandler)
 {
   pausePulses();
 
@@ -533,8 +533,6 @@ const char * FrskyDeviceFirmwareUpdate::flashFirmware(const char * filename, Pro
 
   state = SPORT_IDLE;
   resumePulses();
-
-  return result;
 }
 
 #define CHIP_FIRMWARE_UPDATE_TIMEOUT  20000 /* 20s */
