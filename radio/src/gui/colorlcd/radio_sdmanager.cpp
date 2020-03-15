@@ -125,7 +125,7 @@ class FlashModuleDialog: public FullScreenDialog
       FullScreenDialog(WARNING_TYPE_INFO, "Flash device"),
       device(module)
     {
-      progress = new Progress(this, {ALERT_BITMAP_LEFT, ALERT_BUTTON_TOP, LCD_W - ALERT_BITMAP_LEFT*2, ALERT_TITLE_LINE_HEIGHT});
+      progress = new Progress(this, {LCD_W / 2 - 50, LCD_H / 2, 100, 15}); //new Progress(this, {ALERT_BITMAP_LEFT, ALERT_BUTTON_TOP, LCD_W - ALERT_BITMAP_LEFT*2, ALERT_TITLE_LINE_HEIGHT});
     }
 
     virtual void flash(const char * filename)

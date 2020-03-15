@@ -291,7 +291,17 @@ void MultiFirmwareUpdateDriver::leaveProgMode(bool inverted) const
 
 const char * MultiFirmwareUpdateDriver::flashFirmware(FIL* file, const char* label, ProgressHandler progressHandler) const
 {
+
+#if defined(SIMU)
+  for (uint16_t i = 0; i < 100; i++) {
+    progressHandler(label, STR_WRITING, i, 100);
+    if (SIMU_SLEEP_OR_EXIT_MS(30))
+      break;
+  }
+  return 0;
+#endif
   const char* result = nullptr;
+
   moduleOn();
 
   bool inverted = true; //false; // true
