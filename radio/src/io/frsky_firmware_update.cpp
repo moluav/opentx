@@ -502,8 +502,7 @@ const char * FrskyDeviceFirmwareUpdate::flashFirmware(const char * filename, Pro
   BACKLIGHT_ENABLE();
 
   if (result) {
-    POPUP_WARNING(STR_FIRMWARE_UPDATE_ERROR);
-    SET_WARNING_INFO(result, strlen(result), 0);
+    POPUP_WARNING(STR_FIRMWARE_UPDATE_ERROR, result);
   }
   else {
     POPUP_INFORMATION(STR_FIRMWARE_UPDATE_SUCCESS);
@@ -769,8 +768,7 @@ const char * FrskyChipFirmwareUpdate::flashFirmware(const char * filename, Progr
   BACKLIGHT_ENABLE();
 
   if (result) {
-    POPUP_WARNING(STR_FIRMWARE_UPDATE_ERROR);
-    SET_WARNING_INFO(result, strlen(result), 0);
+    POPUP_WARNING(STR_FIRMWARE_UPDATE_ERROR, result);
   }
   else {
     POPUP_INFORMATION(STR_FIRMWARE_UPDATE_SUCCESS);
