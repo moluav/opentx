@@ -185,6 +185,7 @@ enum ModuleIndex {
   INTERNAL_MODULE,
   EXTERNAL_MODULE,
   SPORT_MODULE,
+  BOOTLOADER_MODULE,
 };
 enum TrainerMode {
   TRAINER_MODE_OFF,
